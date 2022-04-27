@@ -1,0 +1,29 @@
+# This is a sample build configuration for Python.
+# Check our guides at https://confluence.atlassian.com/x/x4UWN for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: normoes/awscli_ecsdeploy:latest
+
+pipelines:
+  default:
+    - step:
+        name: Build
+        services:
+          - docker
+        caches:
+          - docker
+          - pip
+        script:
+          - TAG=${BITBUCKET_BRANCH:-$BITBUCKET_TAG}
+          - aws configure set aws_access_key_id "${AWS_KEY}" --profile <profile>
+          - aws configure set aws_secret_access_key "${AWS_SECRET}" --profile <profile>
+          - scripts/build.sh
+    - step:
+        name: Deploy
+        caches:
+          - pip
+        script:
+          - aws configure set aws_access_key_id "${AWS_KEY}" --profile <profile>
+          - aws configure set aws_secret_access_key "${AWS_SECRET}" --profile <profile>
+          - scripts/deploy.sh

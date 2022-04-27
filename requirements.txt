@@ -1,0 +1,25 @@
+--pre
+apache-airflow[crypto, s3, postgres]==1.10.12
+pandas==1.3.5
+numpy
+pytz
+pyOpenSSL
+ndg-httpsclient
+pyasn1
+flask-bcrypt
+requests
+backoff
+ratelimit
+wtforms==2.3.*
+sqlalchemy==1.3.*
+attrs
+cattrs<=1.5.0
+country-converter==0.6.*
+gql==3.0.0a3
+apache-airflow-backport-providers-amazon
+apache-airflow-backport-providers-google
+web3
+paramiko
+sshtunnel
+lxml
+markupsafe==2.0.1

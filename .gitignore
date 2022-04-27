@@ -1,0 +1,11 @@
+.idea/
+secrets/
+venv/
+build/
+env.list
+staging-env.list
+.secrets
+**/__pycache__/
+.DS_Store
+/**/.DS_Store
+

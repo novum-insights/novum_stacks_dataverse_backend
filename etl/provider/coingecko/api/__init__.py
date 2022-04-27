@@ -1,0 +1,1 @@
+COIN_GECKO_API_POOL = 'coin-gecko-api-pool'

@@ -1,0 +1,3 @@
+
+class ResourceNotFound(IOError):
+    pass
