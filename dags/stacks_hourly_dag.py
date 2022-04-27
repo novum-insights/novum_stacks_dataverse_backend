@@ -171,7 +171,7 @@ get_mempool_over_time = PythonOperator(
 
 invalidate_cloudfront_cache = SSHOperator(
     task_id="invalidate_cloudfront_cache",
-    command='aws cloudfront create-invalidation --distribution-id E2A7OBFCN61DBY --paths "/*"',
+    command='aws cloudfront create-invalidation --distribution-id YOUR_CLOUDFRONT_DIST_ID --paths "/*"',
     ssh_hook=SSHHook('ssh_default'),
     dag=dag
 )

@@ -5,7 +5,6 @@ from csv import QUOTE_NONNUMERIC
 from gzip import compress, decompress, GzipFile
 from io import TextIOWrapper, BytesIO
 from json import dumps
-from sqlalchemy import func, MetaData
 
 from pandas import json_normalize, read_json, read_csv, read_sql
 
@@ -39,30 +38,6 @@ def save_df_to_db(df, table_name, **kwargs):
     df.to_sql(table_name, engine, **kwargs)
 
 
-def preupload_date_integrity_check(table_name, execution_date):
-    engine = get_warehouse_db_engine()
-    metadata = MetaData(bind=engine, reflect=True)  # TODO deprecation warning, cannot get suggested new method to work
-    sql_table = metadata.tables[table_name]
-    with engine.begin() as connection:
-        preexisting_rows = connection.execute(sql_table.select().where(sql_table.c.date == execution_date)
-                                              .with_only_columns([func.count()])).scalar()
-        if preexisting_rows > 0:
-            logging.info('Purging {} data for date {}. Reinsertion will follow...'.format(table_name, execution_date))
-            connection.execute(sql_table.delete().where(sql_table.c.date == execution_date))
-
-
-def preupload_hour_integrity_check(table_name, execution_dt):
-    engine = get_warehouse_db_engine()
-    metadata = MetaData(bind=engine, reflect=True)  # TODO deprecation warning, cannot get suggested new method to work
-    sql_table = metadata.tables[table_name]
-    with engine.begin() as connection:
-        preexisting_rows = connection.execute(sql_table.select().where(sql_table.c.date_time == execution_dt)
-                                              .with_only_columns([func.count()])).scalar()
-        if preexisting_rows > 0:
-            logging.info('Purging {} data for date {}. Reinsertion will follow...'.format(table_name, execution_dt))
-            connection.execute(sql_table.delete().where(sql_table.c.date_time == execution_dt))
-
-
 def save_obj(obj, key, replace=False, bucket_name=STACKS_DATA_BUCKET_NAME, acl_policy=None):
     hook = _get_s3_hook()
     bytes_data = dumps(obj).encode('UTF-8')
@@ -87,11 +62,6 @@ def get_csv(key, **kwargs):
     logging.info('Getting csv from: %s', key)
     bytes_data = _get_object(key, kwargs.get('bucket_name', STACKS_DATA_BUCKET_NAME))
     return read_csv(BytesIO(bytes_data), encoding='utf8', **kwargs)
-
-
-def get_keys(prefix):
-    hook = _get_s3_hook()
-    return hook.list_keys(bucket_name=STACKS_DATA_BUCKET_NAME, prefix=prefix, page_size=100)
 
 
 def _get_object(key, bucket_name=STACKS_DATA_BUCKET_NAME):

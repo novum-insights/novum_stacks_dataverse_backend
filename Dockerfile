@@ -69,8 +69,8 @@ COPY --from=builder /install /usr/local
 
 ENV AIRFLOW__CORE__EXECUTOR LocalExecutor
 ENV POSTGRES_PORT 5432
-ENV POSTGRES_USER airflow
-ENV POSTGRES_DB airflow
+ENV POSTGRES_USER YOUR_AIRFLOW_POSTGRES_USER
+ENV POSTGRES_DB YOUR_AIRFLOW_POSTGRES_PASSWORD
 
 COPY scripts/entrypoint.sh /entrypoint.sh
 COPY config/airflow.cfg ${AIRFLOW_HOME}/airflow.cfg

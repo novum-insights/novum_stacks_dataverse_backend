@@ -1,16 +1,72 @@
-Novum Airflow
+Stacks Dataverse Backend (Airflow)
 ===
 
+This repo contains the [Apache Airflow](https://airflow.apache.org/) implementation of the
+[Stacks Dataverse](https://stacks.novuminsights.com/) backend, developed by [Novum Insights](https://www.novuminsights.com/).
+
+This repo is not intended to be cloned and run as-is. Instead it is a blueprint upon which to set up an environment (see below)
+and run the routines to fetch data from various Stacks sources. For this reason, forking is strongly suggested.
+
+Prerequisites
+--
+* Docker
+* Apache Airflow and a supporting database (and familiarity with both)
+  
+* A *Stacks API/Stacks Blockchain/Stacks Database* setup. Instructions [here](https://docs.hiro.so/get-started/running-api-node) 
+  on how to set this up. (Warning: high-performance server needed)
+* An AWS account is **highly recommended** as the container is deployed on EC2 via CodeDeploy, post-processed
+data is stored in RDS DB as well as an S3 bucket which is hooked to CloudFront. The point above also runs on EC2.
+  
+* Python 3.7 or higher
+  
+* BitBucket is recommended if a CI/CD pipeline is required, although the `bitbucket-pipelines.yml` file can be
+  easily modified for Github Actions or any other such system. Please fork the repo for such purposes.
+  
+* A Cryptocompare API key. Get one [here](https://min-api.cryptocompare.com/pricing) (premium recommended)
+  
+* A LunarCrush API key is recommended. Get one [here](https://legacy.lunarcrush.com/).
+* Coffee and Patience, as many variables inside the code are placeholders to be modified with own parameters.
+
+Initial Setup
+--
+
+1. Set up the *Stacks API/Stacks Blockchain/Stacks Database* component using the instructions provided above. Ec2 is recommended.
+2. Set up an empty Postgres Database. This will be used for Airflow task management. Also set up a Fernet key (see `scripts/entrypoint.sh` for more details).
+   
+2. Add an `env.list` file to the root directory with the following contents from step 2:
+```
+POSTGRES_PASSWORD=XXXXXXX
+POSTGRES_HOST=XXXXXXXX
+AIRFLOW__CORE__FERNET_KEY=XXXXXXXX
+```
+3. With the help of the above components, set up an Airflow instance. See [this tutorial](https://airflow.apache.org/docs/apache-airflow/stable/start/local.html).
+Make sure it uses the resources set up in step 2.
+   
+4. Substitute the relevant entries and placeholders in `airflow.cfg`, the `scripts` folder and the `Dockerfile` with what has been set up so far.
+
+5. Set up AWS things: An Ec2 to host the Airflow Docker image, S3 for both the Stacks data and the CodeDeploy, Codedeploy, CloudFront (hooked to the S3 Stacks data bucket), RDS for more Stacks data.
+   (It is not in the scope of this readme to provide details on how to set up each). AWS is not compulsory but is highly recommended. 
+6. Run through the code and substitute more placeholders with what has been set up so far.
+   
+7. Create a `secrets/` folder in which you should put the RSA private key needed to SSH into the EC2 instance on which your Airflow docker container will run.
+   We have called this file `id_rsa_ec2`.
+8. You should now be ready to deploy your Docker container with the Airflow instance. Please refer to the "Deploy" section below.
+9. Assuming step 7 was successful, you have now entered the final parts of the setup. Congratulations! 
+10. Log in to the Airflow instance with the user you created in step 3 and set up `Variables`. Identify in 
+    the code which ones are needed and use the Airflow site to add them.
+    
+11. Create another database which will contain historical STX price data. Call the table `stx_historical_prices` with two columns: `unix_timestamp` (int) and `price_usd` (float).
+12. Set up `Connections`. These will be to two databases. 1- The Stacks database created in step 1, and 2-The database (warehouse) created in step 11.
+13. Set up a `Pool` called `stacks-pool`.
 
 Build
 --
 ```
 $ docker build . -t airflow
 ```
-Make sure you have been given the `secrets/` folder and that it has been placed at the repo root level. Otherwise nothing
-will work. alberto@novuminsights.com will be happy to oblige.
+Make sure you have been given the `secrets/` folder (or you have created it yourself) and that it has been placed at the repo root level. Also remember `env.list`.
 
-Deployment
+Run locally
 --
 
 ```
@@ -100,24 +156,24 @@ Please follow these steps on the terminal (cd into root dir of project) to deplo
 deployment.
 
 ```bash
-docker build --no-cache  -t 882924714353.dkr.ecr.eu-west-1.amazonaws.com/warehouse-airflow:master .
+docker build --no-cache  -t YOUR_ECR_IMAGE_ID_HERE:master .
 
 aws ecr get-login-password \
-    --region eu-west-1 \
+    --region YOUR_AWS_REGION \
 | docker login \
-    --username AWS \
-    --password-stdin 882924714353.dkr.ecr.eu-west-1.amazonaws.com
+    --username YOUR_AWS_USERNAME \
+    --password-stdin YOUR_ECR_IMAGE_ID_HERE
     
-docker push 882924714353.dkr.ecr.eu-west-1.amazonaws.com/warehouse-airflow:master
+docker push YOUR_ECR_IMAGE_ID_HERE:master
 
-zip -r build/deploy_novum_airflow.zip scripts appspec.yml
+zip -r build/deploy_airflow.zip scripts appspec.yml
 
-aws --region eu-west-1 s3 cp build/deploy_novum_airflow.zip s3://codedeploy-novumdpairflow/
+aws --region YOUR_AWS_REGION s3 cp build/deploy_airflow.zip s3://YOUR_CODEDEPLOY_BUCKET/
 
-aws --region eu-west-1 deploy create-deployment --application-name novum_dp_airflow \
+aws --region YOUR_AWS_REGION deploy create-deployment --application-name YOUR_CODEDEPLOY_APPLICATION_NAME \
             --deployment-config-name CodeDeployDefault.OneAtATime \
-            --deployment-group-name novum_dp_airflow \
-            --s3-location bucket=codedeploy-novumdpairflow,bundleType=zip,key=deploy_novum_airflow.zip
+            --deployment-group-name YOUR_CODEDEPLOY_GROUP_NAME \
+            --s3-location bucket=YOUR_CODEDEPLOY_BUCKET,bundleType=zip,key=deploy_novum_airflow.zip
 ```
 
 CodeDeploy and the Bitbucket Pipeline call bash scripts in the `scripts/` folder, which you are invited to explore.
