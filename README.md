@@ -10,7 +10,7 @@ and run the routines to fetch data from various Stacks sources. For this reason,
 Prerequisites
 --
 * Docker
-* Apache Airflow and a supporting database (and familiarity with both)
+* Apache Airflow and a supporting Postgres database (and familiarity with both)
   
 * A *Stacks API/Stacks Blockchain/Stacks Database* setup. Instructions [here](https://docs.hiro.so/get-started/running-api-node) 
   on how to set this up. (Warning: high-performance server needed)
@@ -30,34 +30,37 @@ data is stored in RDS DB as well as an S3 bucket which is hooked to CloudFront. 
 Initial Setup
 --
 
+*(Feedback on the [lack of] clarity of this section? Please email alberto@novuminsights.com)*
+
 1. Set up the *Stacks API/Stacks Blockchain/Stacks Database* component using the instructions provided above. Ec2 is recommended.
 2. Set up an empty Postgres Database. This will be used for Airflow task management. Also set up a Fernet key (see `scripts/entrypoint.sh` for more details).
    
-2. Add an `env.list` file to the root directory with the following contents from step 2:
+3. Add an `env.list` file to the root directory with the following contents you created in step 2:
 ```
 POSTGRES_PASSWORD=XXXXXXX
 POSTGRES_HOST=XXXXXXXX
 AIRFLOW__CORE__FERNET_KEY=XXXXXXXX
 ```
-3. With the help of the above components, set up an Airflow instance. See [this tutorial](https://airflow.apache.org/docs/apache-airflow/stable/start/local.html).
-Make sure it uses the resources set up in step 2.
+4. With the help of the above components, set up an Airflow instance and its root user. See [this tutorial](https://airflow.apache.org/docs/apache-airflow/stable/start/local.html).
+Make sure it uses the resources set up in step 2. You will find that the vast majority of the tasks will not work: the next steps
+   will fix that.
    
-4. Substitute the relevant entries and placeholders in `airflow.cfg`, the `scripts` folder and the `Dockerfile` with what has been set up so far.
+5. Substitute the relevant entries and placeholders in `airflow.cfg`, the `scripts` folder and the `Dockerfile` with what has been set up so far.
 
-5. Set up AWS things: An Ec2 to host the Airflow Docker image, S3 for both the Stacks data and the CodeDeploy, Codedeploy, CloudFront (hooked to the S3 Stacks data bucket), RDS for more Stacks data.
+6. Set up AWS things: An Ec2 to host the Airflow Docker image, S3 for both the Stacks data and the CodeDeploy, Codedeploy, CloudFront (hooked to the S3 Stacks data bucket), RDS for more Stacks data.
    (It is not in the scope of this readme to provide details on how to set up each). AWS is not compulsory but is highly recommended. 
-6. Run through the code and substitute more placeholders with what has been set up so far.
+7. Run through the code and substitute more placeholders with what has been set up so far.
    
-7. Create a `secrets/` folder in which you should put the RSA private key needed to SSH into the EC2 instance on which your Airflow docker container will run.
+8. Create a `secrets/` folder in which you should put the RSA private key needed to SSH into the EC2 instance on which your Airflow docker container will run.
    We have called this file `id_rsa_ec2`.
-8. You should now be ready to deploy your Docker container with the Airflow instance. Please refer to the "Deploy" section below.
-9. Assuming step 7 was successful, you have now entered the final parts of the setup. Congratulations! 
-10. Log in to the Airflow instance with the user you created in step 3 and set up `Variables`. Identify in 
+9. You should now be ready to deploy your Docker container with the Airflow instance. Please refer to the "Deploy" section below.
+10. Assuming step 9 was successful, you have now entered the final parts of the setup. Congratulations! 
+11. Log in to the Airflow instance with the user you created in step 4 and set up `Variables`. Identify in 
     the code which ones are needed and use the Airflow site to add them.
     
-11. Create another database which will contain historical STX price data. Call the table `stx_historical_prices` with two columns: `unix_timestamp` (int) and `price_usd` (float).
-12. Set up `Connections`. These will be to two databases. 1- The Stacks database created in step 1, and 2-The database (warehouse) created in step 11.
-13. Set up a `Pool` called `stacks-pool`.
+12. Create another database which will contain historical STX price data. Call the table `stx_historical_prices` with two columns: `unix_timestamp` (int) and `price_usd` (float).
+13. Set up `Connections`. These will be to two databases. 1- The Stacks database created in step 1, and 2-The database (warehouse) created in step 12.
+14. Set up a `Pool` called `stacks-pool`.
 
 Build
 --
