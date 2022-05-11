@@ -230,7 +230,7 @@ def run_copy_stacks_dataset_to_latest(execution_date, path_prefix):
 def run_create_stx_spot_stats(execution_date):
     from etl.provider.stacks.extractors import extract_txs_data_between_timestamps,\
         determine_current_stx_reward_cycle,extract_latest_stx_whale_movement, get_fastfee_in_mstx, \
-        extract_stx_api_general_info, get_circulating_supply, extract_apy
+        extract_stx_api_general_info, get_circulating_supply, extract_apy, extract_latest_transfer_fee
     from etl.provider.stacks.paths import STX_RAW_WALLET_BALANCES_PATH, STX_SPOT_STATS_PATH, STX_MEMPOOL_PATH,\
         STX_SPOT_STATS_HISTORICAL_PATH
     from etl.provider.coingecko.api.coins.extractors import get_coin_details_with_spot_market
@@ -287,6 +287,8 @@ def run_create_stx_spot_stats(execution_date):
     stx_fee = get_fastfee_in_mstx() * pow(10, -6)
     usd_fee = get_cryptocurrency_to_usd_conversion_at_ts('STX', now_ts) * stx_fee
 
+    latest_transfer_fee = round(extract_latest_transfer_fee() * pow(10, -6), SIGNIFICANT_DIGITS)
+
     mempool_data = get_json(STX_MEMPOOL_PATH, raw=True, bucket_name=STACKS_DATA_BUCKET_NAME)
     memdatas = [(int(k), v) for k,v in mempool_data.items()]
     memdata = sorted(memdatas, key=lambda x: x[0])[-1]
@@ -313,8 +315,9 @@ def run_create_stx_spot_stats(execution_date):
         'latest_whale_timestamp': int(latest_whale['burn_block_time']),
         'ath': ath,
         'perc_from_ath': perc_from_ath,
-        'mstx_fee': stx_fee,
-        'usd_fee': usd_fee,
+        'mstx_fee': stx_fee,  # stx/byte
+        'usd_fee': usd_fee,  # stx/byte
+        'latest_transfer_fee': latest_transfer_fee,  # stx
         'now_in_mempool': round(memdata[1], 8),
         'circulating_supply': round(get_circulating_supply(), SIGNIFICANT_DIGITS),
     }

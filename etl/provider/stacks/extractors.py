@@ -1,5 +1,6 @@
 import logging
 import requests
+import statistics
 from pandas import read_sql, DataFrame
 from lxml import etree
 from urllib.request import urlopen
@@ -178,6 +179,13 @@ def get_microblock_times():
     sql = "SELECT receive_timestamp FROM microblocks"
     data = read_sql(sql, get_stacks_db_hook().get_conn())
     return data['receive_timestamp']
+
+
+def extract_latest_transfer_fee():
+    sql = "SELECT fee_rate FROM txs WHERE fee_rate IS NOT NULL AND token_transfer_recipient_address IS NOT NULL " \
+          "ORDER BY block_height DESC FETCH FIRST 10 ROWS ONLY"
+    data = read_sql(sql, get_stacks_db_hook().get_conn())
+    return statistics.median([row['fee_rate'].item() for _, row in data.iterrows()])
 
 
 def extract_balance_from_single_address(stx_address):
